@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meu Admin Financeiro</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="../../../node_modules/chart.js/dist/chart.umd.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <header class="app-header">
+        <h1>Meu Admin Financeiro</h1>
+        <div class="header-controls">
+          <button id="btn-configuracoes" class="btn btn-icon" title="Configurações">
+            <i class="fas fa-cog"></i>
+          </button>
+          <button id="btn-backup" class="btn btn-icon" title="Criar Backup">
+            <i class="fas fa-save"></i>
+          </button>
+          <button id="btn-sync-data" class="btn btn-icon" title="Trazer Dados do App">
+            <i class="fas fa-cloud-download-alt"></i>
+          </button>
+          <button id="btn-toggle-theme" class="btn btn-icon" title="Alternar Tema">
+            <i class="fas fa-moon"></i>
+          </button>
+        </div>
+      </header>
+      
+      <!-- Modal de Configurações -->
+      <div id="modal-configuracoes" class="modal">
+        <div class="modal-content">
+          <span class="close">&times;</span>
+          <h2>Configurações</h2>
+          <form id="config-form">
+            <div class="form-group">
+              <label for="config-tema">Tema:</label>
+              <select id="config-tema">
+                <option value="light">Claro</option>
+                <option value="dark">Escuro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="config-moeda">Moeda:</label>
+              <select id="config-moeda">
+                <option value="BRL">Real (R$)</option>
+                <option value="USD">Dólar ($)</option>
+                <option value="EUR">Euro (€)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="config-notificacoes">
+                Ativar notificações
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="config-auto-backup">
+                Backup automático
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal de Sincronização de Dados -->
+      <div id="modal-sync-data" class="modal">
+        <div class="modal-content">
+          <span class="close" id="close-sync-modal">&times;</span>
+          <h2>Trazer Dados do App</h2>
+          <p>Configure a URL da API para sincronizar seus dados financeiros:</p>
+          <form id="sync-form">
+            <div class="form-group">
+              <label for="api-url">URL da API:</label>
+              <input type="url" id="api-url" required placeholder="https://api.exemplo.com/financas.json">
+              <small class="help-text">A URL deve retornar um arquivo JSON com os dados financeiros</small>
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="merge-data">
+                Mesclar com dados existentes (se desmarcado, substitui todos os dados)
+              </label>
+            </div>
+            <div class="sync-actions">
+              <button type="button" id="btn-test-connection" class="btn btn-secondary">
+                <i class="fas fa-link"></i> Testar Conexão
+              </button>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-download"></i> Sincronizar Dados
+              </button>
+            </div>
+          </form>
+          <div id="sync-status" class="sync-status"></div>
+        </div>
+      </div>
+        
+      <nav class="tab-navigation">
+        <ul>
+          <li class="active" data-tab="relatorio-mes-passado">Relatório do Mês Passado</li>
+          <li data-tab="prospecao-mes">Planejamento do Próximo Mês</li>
+        </ul>
+      </nav>
+
+      <section id="relatorio-mes-passado" class="tab-content active">
+        <h2>Relatório do Mês Passado</h2>
+            
+        <div class="form-container collapsible">
+          <div class="form-header" data-toggle="receita-form-content">
+            <h3>Registrar Receitas</h3>
+            <span class="toggle-icon">▼</span>
+          </div>
+          <div id="receita-form-content" class="form-content collapsed">
+            <form id="receita-form">
+              <div class="form-group">
+                <label for="receita-descricao">Descrição:</label>
+                <input type="text" id="receita-descricao" required placeholder="Ex: Salário, Freelance...">
+              </div>
+              <div class="form-group">
+                <label for="receita-valor">Valor (R$):</label>
+                <input type="number" id="receita-valor" min="0.01" step="0.01" required placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="receita-data">Data:</label>
+                <input type="date" id="receita-data" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Adicionar Receita</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="form-container collapsible">
+          <div class="form-header" data-toggle="despesa-form-content">
+            <h3>Registrar Despesas</h3>
+            <span class="toggle-icon">▼</span>
+          </div>
+          <div id="despesa-form-content" class="form-content collapsed">
+            <form id="despesa-form">
+              <div class="form-group">
+                <label for="despesa-descricao">Descrição:</label>
+                <input type="text" id="despesa-descricao" required placeholder="Ex: Aluguel, Mercado...">
+              </div>
+              <div class="form-group">
+                <label for="despesa-categoria">Categoria:</label>
+                <select id="despesa-categoria" required>
+                  <option value="">Selecione uma categoria</option>
+                  <option value="moradia">Moradia</option>
+                  <option value="alimentacao">Alimentação</option>
+                  <option value="transporte">Transporte</option>
+                  <option value="lazer">Lazer</option>
+                  <option value="saude">Saúde</option>
+                  <option value="educacao">Educação</option>
+                  <option value="dividas">Dívidas</option>
+                  <option value="outros">Outros</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="despesa-valor">Valor (R$):</label>
+                <input type="number" id="despesa-valor" min="0.01" step="0.01" required placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="despesa-data">Data:</label>
+                <input type="date" id="despesa-data" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Adicionar Despesa</button>
+            </form>
+          </div>
+        </div>
+
+        <div id="relatorio-container">
+          <h3>Resumo do Mês</h3>
+          <div class="acoes-relatorio">
+            <button id="btn-exportar-csv" class="btn btn-secondary">Exportar CSV</button>
+          </div>
+          <div class="resumo-cards">
+            <div class="card">
+              <h4>Total de Receitas</h4>
+              <p id="total-receitas">R$ 0,00</p>
+            </div>
+            <div class="card">
+              <h4>Total de Despesas</h4>
+              <p id="total-despesas">R$ 0,00</p>
+            </div>
+            <div class="card">
+              <h4>Saldo</h4>
+              <p id="saldo-final">R$ 0,00</p>
+            </div>
+          </div>
+                
+          <div class="relatorio-detalhes">
+            <div class="lista-container">
+              <h4>Receitas Registradas</h4>
+              <ul id="lista-receitas" class="lista-financeira">
+                <!-- Lista de receitas será preenchida via JavaScript -->
+                <li class="lista-vazia">Nenhuma receita registrada</li>
+              </ul>
+            </div>
+                    
+            <div class="lista-container">
+              <h4>Despesas Registradas</h4>
+              <ul id="lista-despesas" class="lista-financeira">
+                <!-- Lista de despesas será preenchida via JavaScript -->
+                <li class="lista-vazia">Nenhuma despesa registrada</li>
+              </ul>
+            </div>
+          </div>
+                
+          <div id="grafico-container">
+            <h4>Análise Gráfica</h4>
+            <div class="graficos-row">
+              <div class="grafico-item">
+                <h5>Despesas por Categoria</h5>
+                <div id="grafico-categorias-container">
+                  <canvas id="grafico-categorias"></canvas>
+                </div>
+              </div>
+              <div class="grafico-item">
+                <h5>Receitas vs Despesas</h5>
+                <div id="grafico-comparativo-container">
+                  <canvas id="grafico-comparativo"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="prospecao-mes" class="tab-content">
+        <h2>Planejamento do Próximo Mês</h2>
+        
+        <div class="form-container collapsible">
+          <div class="form-header" data-toggle="previsao-receita-form-content">
+            <h3>Receitas Previstas</h3>
+            <span class="toggle-icon">▼</span>
+          </div>
+          <div id="previsao-receita-form-content" class="form-content collapsed">
+            <form id="previsao-receita-form">
+              <div class="form-group">
+                <label for="previsao-receita-descricao">Descrição:</label>
+                <input type="text" id="previsao-receita-descricao" required placeholder="Ex: Salário, Freelance...">
+              </div>
+              <div class="form-group">
+                <label for="previsao-receita-valor">Valor (R$):</label>
+                <input type="number" id="previsao-receita-valor" min="0.01" step="0.01" required placeholder="0.00">
+              </div>
+              <button type="submit" class="btn btn-primary">Adicionar Receita Prevista</button>
+            </form>
+          </div>
+        </div>
+        
+        <div class="form-container collapsible">
+          <div class="form-header" data-toggle="previsao-despesa-form-content">
+            <h3>Despesas Previstas</h3>
+            <span class="toggle-icon">▼</span>
+          </div>
+          <div id="previsao-despesa-form-content" class="form-content collapsed">
+            <form id="previsao-despesa-form">
+              <div class="form-group">
+                <label for="previsao-despesa-descricao">Descrição:</label>
+                <input type="text" id="previsao-despesa-descricao" required placeholder="Ex: Aluguel, Mercado...">
+              </div>
+              <div class="form-group">
+                <label for="previsao-despesa-categoria">Categoria:</label>
+                <select id="previsao-despesa-categoria" required>
+                  <option value="">Selecione uma categoria</option>
+                  <option value="moradia">Moradia</option>
+                  <option value="alimentacao">Alimentação</option>
+                  <option value="transporte">Transporte</option>
+                  <option value="lazer">Lazer</option>
+                  <option value="saude">Saúde</option>
+                  <option value="educacao">Educação</option>
+                  <option value="dividas">Dívidas</option>
+                  <option value="outros">Outros</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="previsao-despesa-valor">Valor Total (R$):</label>
+                <input type="number" id="previsao-despesa-valor" min="0.01" step="0.01" required placeholder="0.00">
+                <small class="help-text">Para despesas parceladas, digite o valor total. O valor mensal será calculado automaticamente.</small>
+              </div>
+              <div class="form-group">
+                <label for="previsao-despesa-parcela">É despesa parcelada?</label>
+                <select id="previsao-despesa-parcela">
+                  <option value="nao">Não</option>
+                  <option value="sim">Sim</option>
+                </select>
+              </div>
+              <div id="parcelas-container" style="display: none;">
+                <div class="form-group">
+                  <label for="previsao-despesa-num-parcelas">Número de Parcelas:</label>
+                  <input type="number" id="previsao-despesa-num-parcelas" min="2" value="2">
+                </div>
+                <div class="form-group">
+                  <label for="previsao-despesa-parcela-atual">Parcela Atual:</label>
+                  <input type="number" id="previsao-despesa-parcela-atual" min="1" value="1">
+                </div>
+                <div class="form-group">
+                  <label for="previsao-despesa-juros">Taxa de Juros Mensal (% opcional):</label>
+                  <input type="number" id="previsao-despesa-juros" min="0" step="0.01" value="0" placeholder="0.00">
+                  <small class="help-text">Deixe 0 se não houver juros.</small>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">Adicionar Despesa Prevista</button>
+            </form>
+          </div>
+        </div>
+        
+        <div class="form-container">
+          <h3>Sugestão de Distribuição de Receitas</h3>
+          <div class="distribuicao-container">
+            <div class="distribuicao-item">
+              <label>Investimento (25%)</label>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 25%"></div>
+              </div>
+              <p id="valor-investimento">R$ 0,00</p>
+            </div>
+            <div class="distribuicao-item">
+              <label>Gastos Necessários (45%)</label>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 45%"></div>
+              </div>
+              <p id="valor-necessarios">R$ 0,00</p>
+            </div>
+            <div class="distribuicao-item">
+              <label>Prazeres (10%)</label>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 10%"></div>
+              </div>
+              <p id="valor-prazeres">R$ 0,00</p>
+            </div>
+            <div class="distribuicao-item">
+              <label>Conforto (15%)</label>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 15%"></div>
+              </div>
+              <p id="valor-conforto">R$ 0,00</p>
+            </div>
+            <div class="distribuicao-item">
+              <label>Reserva de Emergência (5%)</label>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 5%"></div>
+              </div>
+              <p id="valor-emergencia">R$ 0,00</p>
+            </div>
+          </div>
+        </div>
+        
+        <div id="planejamento-container">
+          <h3>Resumo do Planejamento</h3>
+          <div class="resumo-cards">
+            <div class="card">
+              <h4>Total de Receitas Previstas</h4>
+              <p id="total-receitas-previstas">R$ 0,00</p>
+            </div>
+            <div class="card">
+              <h4>Total de Despesas Previstas</h4>
+              <p id="total-despesas-previstas">R$ 0,00</p>
+            </div>
+            <div class="card">
+              <h4>Saldo Previsto</h4>
+              <p id="saldo-previsto">R$ 0,00</p>
+            </div>
+          </div>
+          
+          <div class="relatorio-detalhes">
+            <div class="lista-container">
+              <h4>Receitas Previstas</h4>
+              <ul id="lista-receitas-previstas" class="lista-financeira">
+                <li class="lista-vazia">Nenhuma receita prevista registrada</li>
+              </ul>
+            </div>
+            
+            <div class="lista-container">
+              <h4>Despesas Previstas</h4>
+              <ul id="lista-despesas-previstas" class="lista-financeira">
+                <li class="lista-vazia">Nenhuma despesa prevista registrada</li>
+              </ul>
+            </div>
+            
+            <div class="lista-container">
+              <h4>Parcelas Finalizadas</h4>
+              <ul id="lista-parcelas-finalizadas" class="lista-financeira">
+                <li class="lista-vazia">Nenhuma parcela finalizada</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div id="grafico-planejamento-container">
+            <h4>Análise Gráfica do Planejamento</h4>
+            <div class="graficos-row">
+              <div class="grafico-item">
+                <h5>Receitas Previstas por Tipo</h5>
+                <div id="grafico-receitas-previstas-container">
+                  <canvas id="grafico-receitas-previstas"></canvas>
+                </div>
+              </div>
+              <div class="grafico-item">
+                <h5>Planejado (Próx. Mês) vs Realizado (Mês Atual)</h5>
+                <div id="grafico-planejado-realizado-container">
+                  <canvas id="grafico-planejado-realizado"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="../js/renderer.js"></script>
+  </body>
+</html>

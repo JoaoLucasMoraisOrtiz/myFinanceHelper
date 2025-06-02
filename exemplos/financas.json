@@ -1,0 +1,71 @@
+{
+  "receitas": [
+    {
+      "id": "rec-1",
+      "descricao": "Salário",
+      "valor": 5000,
+      "data": "2025-05-01"
+    },
+    {
+      "id": "rec-2",
+      "descricao": "Freelance",
+      "valor": 1200,
+      "data": "2025-05-15"
+    }
+  ],
+  "despesas": [
+    {
+      "id": "desp-1",
+      "descricao": "Aluguel",
+      "categoria": "moradia",
+      "valor": 1500,
+      "data": "2025-05-01"
+    },
+    {
+      "id": "desp-2",
+      "descricao": "Mercado",
+      "categoria": "alimentacao",
+      "valor": 400,
+      "data": "2025-05-05"
+    },
+    {
+      "id": "desp-3",
+      "descricao": "Combustível",
+      "categoria": "transporte",
+      "valor": 200,
+      "data": "2025-05-10"
+    }
+  ],
+  "receitasPrevistas": [
+    {
+      "id": "recprev-1",
+      "descricao": "Salário Junho",
+      "valor": 5000
+    },
+    {
+      "id": "recprev-2",
+      "descricao": "Projeto Freelance",
+      "valor": 800
+    }
+  ],
+  "despesasPrevistas": [
+    {
+      "id": "despprev-1",
+      "descricao": "Aluguel Junho",
+      "categoria": "moradia",
+      "valor": 1500,
+      "isParcelada": false
+    },
+    {
+      "id": "despprev-2",
+      "descricao": "Cartão de Crédito",
+      "categoria": "dividas",
+      "valor": 2400,
+      "isParcelada": true,
+      "numParcelas": 12,
+      "parcelaAtual": 3,
+      "juros": 2.5,
+      "valorMensal": 220
+    }
+  ]
+}

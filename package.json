@@ -1,0 +1,20 @@
+{
+  "name": "myadmfinance",
+  "version": "1.0.0",
+  "description": "Sistema de cuidado pessoal financeiro para controle de receitas e despesas",
+  "license": "ISC",
+  "author": "João L. M. Ortiz",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "test",
+    "dev": "electron . --dev"
+  },
+  "devDependencies": {
+    "electron": "^36.3.2"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.9"
+  }
+}
