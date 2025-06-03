@@ -114,42 +114,86 @@ export function isAuthenticated() {
 }
 
 export async function syncWithAPI() {
+    console.log('🔄 [syncWithAPI] Iniciando função syncWithAPI...');
+    
     if (!isAuthenticated()) {
+        console.error('❌ [syncWithAPI] Usuário não autenticado');
         throw new Error('Usuário não autenticado');
     }
 
+    console.log('✅ [syncWithAPI] Usuário autenticado, continuando...');
+    console.log('🔑 [syncWithAPI] Token atual:', currentToken ? `${currentToken.substring(0, 20)}...` : 'NULL');
+    console.log('🌐 [syncWithAPI] URL da API:', `${API_BASE_URL}/financas`);
+
     try {
-        const response = await fetch(`${API_BASE_URL}/financas`, {
+        const requestData = {
+            url: `${API_BASE_URL}/financas`,
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${currentToken}`,
                 'Content-Type': 'application/json'
             }
-        });
+        };
+        
+        console.log('📤 [syncWithAPI] Dados da requisição:', requestData);
+        console.log('⏳ [syncWithAPI] Fazendo requisição HTTP via IPC...');
 
-        if (response.status === 401) {
+        // Usar o método IPC do Electron ao invés de fetch direto
+        const response = await window.electronAPI.fazerRequisicaoHTTP(requestData);
+
+        console.log('📥 [syncWithAPI] Resposta completa da requisição HTTP:', response);
+        console.log('📊 [syncWithAPI] Status da resposta:', response?.response?.status);
+        console.log('📋 [syncWithAPI] Headers da resposta:', response?.response?.headers);
+
+        if (!response.success) {
+            console.error('❌ [syncWithAPI] Erro na requisição:', response.error);
+            throw new Error(`Erro na requisição: ${response.error}`);
+        }
+
+        console.log('✅ [syncWithAPI] Requisição bem-sucedida');
+
+        if (response.response.status === 401) {
+            console.warn('🔒 [syncWithAPI] Token expirado, fazendo logout...');
             // Token expirado - fazer logout e solicitar novo login
             logout();
             throw new Error('Sessão expirada. Faça login novamente.');
         }
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (response.response.status !== 200) {
+            console.error(`❌ [syncWithAPI] Status HTTP inválido: ${response.response.status}`);
+            throw new Error(`HTTP ${response.response.status}: ${response.response.statusText || 'Erro na API'}`);
         }
 
-        const result = await response.json();
+        const result = response.response.data;
+        console.log('📦 [syncWithAPI] Dados recebidos da API (result):', result);
+        console.log('🔍 [syncWithAPI] Tipo de dados recebidos:', typeof result);
+        console.log('📏 [syncWithAPI] Tamanho dos dados (se for objeto):', result && typeof result === 'object' ? Object.keys(result).length : 'N/A');
         
-        if (!result.success) {
+        if (!result) {
+            console.error('❌ [syncWithAPI] Nenhum dado retornado da API');
+            throw new Error('Nenhum dado retornado da API');
+        }
+        
+        if (typeof result === 'object' && result.success === false) {
+            console.error('❌ [syncWithAPI] API retornou erro:', result.message);
             throw new Error(result.message || 'Erro ao sincronizar dados');
         }
 
-        return result.data;
+        // Se a API retorna diretamente os dados ou se tem uma propriedade 'data'
+        const finalData = result.data || result;
+        console.log('🎯 [syncWithAPI] Dados finais que serão retornados:', finalData);
+        
+        return finalData;
 
     } catch (error) {
-        console.error('Erro na sincronização:', error);
+        console.error('💥 [syncWithAPI] Erro capturado na sincronização:', error);
+        console.error('💥 [syncWithAPI] Tipo do erro:', typeof error);
+        console.error('💥 [syncWithAPI] Mensagem do erro:', error.message);
+        console.error('💥 [syncWithAPI] Stack trace:', error.stack);
         
         // Se o erro for de autenticação, fazer logout
         if (error.message.includes('401') || error.message.includes('expirada')) {
+            console.warn('🔐 [syncWithAPI] Erro de autenticação detectado, fazendo logout...');
             logout();
         }
         

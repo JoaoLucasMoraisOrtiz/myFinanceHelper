@@ -9,6 +9,7 @@ export let financas = {
 export async function carregarDados() {
     try {
         const resultado = await window.electronAPI.carregarDados();
+
         if (resultado.success) {
             financas = resultado.dados;
             if (!financas.receitas) financas.receitas = [];

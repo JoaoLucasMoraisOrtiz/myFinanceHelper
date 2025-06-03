@@ -1,11 +1,29 @@
 {
   "receitas": [
+    {
+      "id": 1748954111608,
+      "descricao": "Salário",
+      "valor": 1100,
+      "data": "2025-06-03"
+    },
+    {
+      "id": 1748954511765,
+      "descricao": "Absoluta",
+      "valor": 999,
+      "data": "2025-06-03"
+    }
   ],
   "planejamento": {
     "receitas": [],
     "despesas": []
   },
   "despesas": [
-    
+    {
+      "id": 1748957051650,
+      "descricao": "Camera",
+      "categoria": "outros",
+      "valor": 1000,
+      "data": "2025-01-06"
+    }
   ]
 }

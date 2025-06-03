@@ -6,27 +6,49 @@ import { mostrarNotificacao, mostrarConfirmacao } from './notificationService.js
 import { getCurrentToken, isAuthenticated, syncWithAPI, logout } from './authService.js';
 
 export function initSincronizacaoDados() {
+    console.log('🚀 [initSincronizacaoDados] Inicializando sistema de sincronização...');
+    
     const btnSyncData = document.getElementById('btn-sync-data');
     const btnSaveToCloud = document.getElementById('btn-save-to-cloud');
     const btnAnalyzeDuplicates = document.getElementById('btn-analyze-duplicates');
     const btnRemoveDuplicates = document.getElementById('btn-remove-duplicates');
     
+    console.log('🔍 [initSincronizacaoDados] Botões encontrados:', {
+        btnSyncData: !!btnSyncData,
+        btnSaveToCloud: !!btnSaveToCloud,
+        btnAnalyzeDuplicates: !!btnAnalyzeDuplicates,
+        btnRemoveDuplicates: !!btnRemoveDuplicates
+    });
+    
     if (btnSyncData) {
+        console.log('🔘 [initSincronizacaoDados] Botão de sincronização encontrado, adicionando event listener...');
         btnSyncData.addEventListener('click', async () => {
+            console.log('🖱️ [btnSyncData] Botão de sincronização clicado!');
+            
             if (!isAuthenticated()) {
+                console.warn('🔒 [btnSyncData] Usuário não autenticado');
                 mostrarNotificacao('Erro', 'Você precisa estar logado para sincronizar dados', 'error');
                 return;
             }
+            
+            console.log('✅ [btnSyncData] Usuário autenticado, mostrando confirmação...');
             
             const confirmacao = await mostrarConfirmacao(
                 'Sincronizar Dados',
                 'Deseja sincronizar os dados financeiros com a API? Esta ação pode sobrescrever dados locais.'
             );
             
+            console.log('💬 [btnSyncData] Resposta da confirmação:', confirmacao);
+            
             if (confirmacao) {
+                console.log('✅ [btnSyncData] Usuário confirmou, iniciando sincronização...');
                 await sincronizarDadosAutenticado();
+            } else {
+                console.log('❌ [btnSyncData] Usuário cancelou a sincronização');
             }
         });
+    } else {
+        console.error('❌ [initSincronizacaoDados] Botão btn-sync-data não encontrado no DOM!');
     }
     
     if (btnSaveToCloud) {
@@ -104,39 +126,77 @@ export function initSincronizacaoDados() {
 }
 
 async function sincronizarDadosAutenticado() {
+    console.log('🚀 [sincronizarDadosAutenticado] Iniciando função de sincronização...');
     mostrarNotificacao('Info', 'Iniciando sincronização...', 'info');
     
     try {
+        console.log('📞 [sincronizarDadosAutenticado] Chamando syncWithAPI()...');
+        
         // Usar a função do authService que já tem autenticação
         const dadosAPI = await syncWithAPI();
+
+        console.log('📦 [sincronizarDadosAutenticado] Dados recebidos da API:', dadosAPI);
+        console.log('🔍 [sincronizarDadosAutenticado] Tipo dos dados recebidos:', typeof dadosAPI);
+        console.log('📏 [sincronizarDadosAutenticado] É array?', Array.isArray(dadosAPI));
+        
+        if (dadosAPI && typeof dadosAPI === 'object') {
+            console.log('🔑 [sincronizarDadosAutenticado] Chaves do objeto:', Object.keys(dadosAPI));
+            if (dadosAPI.receitas) console.log('💰 [sincronizarDadosAutenticado] Receitas encontradas:', dadosAPI.receitas.length);
+            if (dadosAPI.despesas) console.log('💸 [sincronizarDadosAutenticado] Despesas encontradas:', dadosAPI.despesas.length);
+            if (dadosAPI.planejamento) console.log('📋 [sincronizarDadosAutenticado] Planejamento encontrado:', dadosAPI.planejamento);
+        }
         
         if (!dadosAPI) {
+            console.error('❌ [sincronizarDadosAutenticado] Nenhum dado foi retornado da API');
             throw new Error('Nenhum dado foi retornado da API');
         }
         
+        console.log('✅ [sincronizarDadosAutenticado] Dados recebidos, validando estrutura...');
+        
         // Validar estrutura dos dados
         if (!validarEstruturaDados(dadosAPI)) {
+            console.error('❌ [sincronizarDadosAutenticado] Estrutura de dados da API é inválida');
+            console.log('🔍 [sincronizarDadosAutenticado] Dados para validação:', dadosAPI);
             throw new Error('Estrutura de dados da API é inválida');
         }
+        
+        console.log('✅ [sincronizarDadosAutenticado] Estrutura válida, processando dados...');
         
         // Processar e mesclar os dados
         await processarDadosSincronizados(dadosAPI, true);
         
+        console.log('✅ [sincronizarDadosAutenticado] Dados processados com sucesso!');
         mostrarNotificacao('Sucesso', 'Dados sincronizados com sucesso!', 'success');
+        
+        console.log('🔄 [sincronizarDadosAutenticado] Atualizando relatórios...');
         
         // Atualizar relatórios
         atualizarRelatorio();
         atualizarPlanejamento();
         
+        console.log('✅ [sincronizarDadosAutenticado] Sincronização concluída com sucesso!');
+        
     } catch (error) {
-        console.error('Erro na sincronização:', error);
+        console.error('💥 [sincronizarDadosAutenticado] Erro na sincronização:', error);
+        console.error('💥 [sincronizarDadosAutenticado] Tipo do erro:', typeof error);
+        console.error('💥 [sincronizarDadosAutenticado] Mensagem do erro:', error.message);
+        console.error('💥 [sincronizarDadosAutenticado] Stack trace:', error.stack);
         mostrarNotificacao('Erro', `Falha na sincronização: ${error.message}`, 'error');
     }
 }
 
 function validarEstruturaDados(dados) {
+    console.log('🔍 [validarEstruturaDados] Iniciando validação dos dados...');
+    console.log('📦 [validarEstruturaDados] Dados recebidos:', dados);
+    console.log('🔍 [validarEstruturaDados] Tipo dos dados:', typeof dados);
+    
     // Validar se os dados têm a estrutura esperada
-    if (!dados || typeof dados !== 'object') return false;
+    if (!dados || typeof dados !== 'object') {
+        console.error('❌ [validarEstruturaDados] Dados são nulos ou não são objeto');
+        return false;
+    }
+    
+    console.log('🔑 [validarEstruturaDados] Chaves disponíveis:', Object.keys(dados));
     
     const estruturaEsperada = {
         receitas: Array.isArray(dados.receitas),
@@ -146,7 +206,22 @@ function validarEstruturaDados(dados) {
                      Array.isArray(dados.planejamento.despesas)
     };
     
-    return Object.values(estruturaEsperada).every(Boolean);
+    console.log('📋 [validarEstruturaDados] Validação individual:');
+    console.log('  - receitas é array?', estruturaEsperada.receitas, '(dados.receitas:', dados.receitas, ')');
+    console.log('  - despesas é array?', estruturaEsperada.despesas, '(dados.despesas:', dados.despesas, ')');
+    console.log('  - planejamento válido?', estruturaEsperada.planejamento);
+    
+    if (dados.planejamento) {
+        console.log('  - planejamento.receitas é array?', Array.isArray(dados.planejamento.receitas));
+        console.log('  - planejamento.despesas é array?', Array.isArray(dados.planejamento.despesas));
+    } else {
+        console.log('  - planejamento não existe nos dados');
+    }
+    
+    const isValid = Object.values(estruturaEsperada).every(Boolean);
+    console.log('✅ [validarEstruturaDados] Resultado da validação:', isValid);
+    
+    return isValid;
 }
 
 async function processarDadosSincronizados(dadosNovos, mesclar) {

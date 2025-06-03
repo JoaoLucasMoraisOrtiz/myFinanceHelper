@@ -988,6 +988,7 @@ h1 {
     visibility: visible;
 }
 
+
 .modal-dialog {
     background-color: var(--bg-secondary);
     border-radius: 8px;
@@ -998,6 +999,8 @@ h1 {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     transform: scale(0.7);
     transition: transform 0.3s ease;
+    position: relative;
+    z-index: 2100;
 }
 
 .modal-overlay.show .modal-dialog {
