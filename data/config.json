@@ -1,6 +1,6 @@
 {
-  "tema": "light",
+  "tema": "dark",
   "moeda": "BRL",
   "notificacoes": true,
-  "autoBackup": true
+  "autoBackup": false
 }

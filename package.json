@@ -7,7 +7,7 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "start": "electron .",
+    "start": "electron . --no-sandbox",
     "test": "test",
     "dev": "electron . --dev"
   },

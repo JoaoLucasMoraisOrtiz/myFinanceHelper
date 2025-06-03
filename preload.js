@@ -13,7 +13,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
   carregarConfiguracoes: () => ipcRenderer.invoke('carregar-configuracoes'),
   
   // Métodos para backup
-  criarBackup: () => ipcRenderer.invoke('criar-backup')
+  criarBackup: () => ipcRenderer.invoke('criar-backup'),
+  
+  // ========== NOVOS MÉTODOS PARA AUTENTICAÇÃO ==========
+  
+  // Autenticação segura
+  salvarAuthToken: (token) => ipcRenderer.invoke('salvar-auth-token', token),
+  carregarAuthToken: () => ipcRenderer.invoke('carregar-auth-token'),
+  limparAuthData: () => ipcRenderer.invoke('limpar-auth-data'),
+  
+  // Requisições HTTP autenticadas
+  fazerRequisicaoHTTP: (opcoes) => ipcRenderer.invoke('fazer-requisicao-http', opcoes),
+  
+  // ========== MÉTODOS UTILITÁRIOS ==========
+  
+  // Informações da aplicação
+  obterInfoApp: () => ipcRenderer.invoke('obter-info-app'),
+  abrirDiretorioDados: () => ipcRenderer.invoke('abrir-diretorio-dados'),
+  reiniciarApp: () => ipcRenderer.invoke('reiniciar-app'),
+  
+  // Debug (apenas desenvolvimento)
+  logDebug: (nivel, mensagem, dados) => ipcRenderer.invoke('log-debug', nivel, mensagem, dados)
 });
 
-console.log('Preload.js carregado com sucesso');
+console.log('Preload.js carregado com sucesso - Sistema de autenticação integrado');

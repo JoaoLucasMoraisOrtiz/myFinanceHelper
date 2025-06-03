@@ -19,18 +19,45 @@ const createWindow = () => {
     height: 800,
     minWidth: 800,
     minHeight: 600,
+    show: false, // Não mostrar até estar carregada
+    icon: path.join(__dirname, 'assets/icon.png'), // Ícone da aplicação (se existir)
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.js'),
+      webSecurity: true // Manter segurança web ativa
     }
   })
 
   // Carregar o arquivo HTML principal
   mainWindow.loadFile('./src/view/pages/index.html')
 
-  // Abrir DevTools automaticamente em desenvolvimento
-  mainWindow.webContents.openDevTools()
+  // Mostrar janela quando estiver pronta
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show()
+    
+    // Só abrir DevTools em desenvolvimento
+    if (process.env.NODE_ENV === 'development') {
+      mainWindow.webContents.openDevTools()
+    }
+  })
+
+  // Tratar tentativas de navegação externa
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // Permitir apenas URLs da própria aplicação
+    if (url.startsWith('file://') || url.startsWith('http://localhost') || url.startsWith('https://localhost')) {
+      return { action: 'allow' }
+    }
+    
+    // Para URLs externos, abrir no navegador padrão
+    require('electron').shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  // Event listeners para melhor UX
+  mainWindow.on('closed', () => {
+    mainWindow = null
+  })
 }
 
 // Criar janela quando o Electron estiver pronto
@@ -97,6 +124,110 @@ function configurarIPC() {
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  // ========== NOVOS HANDLERS PARA AUTENTICAÇÃO ==========
+  
+  // Salvar token de autenticação de forma segura
+  ipcMain.handle('salvar-auth-token', async (event, token) => {
+    try {
+      const authFilePath = path.join(dataDir, '.auth')
+      fs.writeFileSync(authFilePath, token, 'utf-8')
+      return { success: true }
+    } catch (error) {
+      console.error('Erro ao salvar token:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  // Carregar token de autenticação
+  ipcMain.handle('carregar-auth-token', async () => {
+    try {
+      const authFilePath = path.join(dataDir, '.auth')
+      if (fs.existsSync(authFilePath)) {
+        const token = fs.readFileSync(authFilePath, 'utf-8')
+        return { success: true, token }
+      }
+      return { success: true, token: null }
+    } catch (error) {
+      console.error('Erro ao carregar token:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  // Limpar dados de autenticação
+  ipcMain.handle('limpar-auth-data', async () => {
+    try {
+      const authFilePath = path.join(dataDir, '.auth')
+      if (fs.existsSync(authFilePath)) {
+        fs.unlinkSync(authFilePath)
+      }
+      return { success: true }
+    } catch (error) {
+      console.error('Erro ao limpar dados de auth:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  // Fazer requisições HTTP autenticadas
+  ipcMain.handle('fazer-requisicao-http', async (event, { url, method = 'GET', headers = {}, body = null }) => {
+    try {
+      const https = require('https')
+      const http = require('http')
+      const urlObj = new URL(url)
+      const isHttps = urlObj.protocol === 'https:'
+      
+      return new Promise((resolve, reject) => {
+        const options = {
+          hostname: urlObj.hostname,
+          port: urlObj.port || (isHttps ? 443 : 80),
+          path: urlObj.pathname + urlObj.search,
+          method: method,
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'FinanceApp/1.0',
+            ...headers
+          }
+        }
+
+        const req = (isHttps ? https : http).request(options, (res) => {
+          let data = ''
+          res.on('data', chunk => data += chunk)
+          res.on('end', () => {
+            try {
+              const response = {
+                status: res.statusCode,
+                headers: res.headers,
+                data: data ? JSON.parse(data) : null
+              }
+              resolve({ success: true, response })
+            } catch (parseError) {
+              resolve({ 
+                success: true, 
+                response: { 
+                  status: res.statusCode, 
+                  headers: res.headers, 
+                  data: data 
+                } 
+              })
+            }
+          })
+        })
+
+        req.on('error', (error) => {
+          resolve({ success: false, error: error.message })
+        })
+
+        if (body) {
+          req.write(typeof body === 'string' ? body : JSON.stringify(body))
+        }
+        
+        req.end()
+      })
+    } catch (error) {
+      console.error('Erro na requisição HTTP:', error)
       return { success: false, error: error.message }
     }
   })
@@ -262,5 +393,50 @@ function configurarIPC() {
       console.error('Erro ao criar backup:', error)
       return { success: false, error: error.message }
     }
+  })
+
+  // ========== HANDLERS ADICIONAIS PARA MELHOR UX ==========
+  
+  // Obter informações da aplicação
+  ipcMain.handle('obter-info-app', async () => {
+    return {
+      success: true,
+      info: {
+        versao: app.getVersion(),
+        nome: app.getName(),
+        dataDir: dataDir,
+        plataforma: process.platform,
+        arquitetura: process.arch,
+        versaoElectron: process.versions.electron,
+        versaoNode: process.versions.node
+      }
+    }
+  })
+
+  // Abrir diretório de dados
+  ipcMain.handle('abrir-diretorio-dados', async () => {
+    try {
+      const { shell } = require('electron')
+      await shell.openPath(dataDir)
+      return { success: true }
+    } catch (error) {
+      console.error('Erro ao abrir diretório:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  // Reiniciar aplicação
+  ipcMain.handle('reiniciar-app', async () => {
+    app.relaunch()
+    app.quit()
+  })
+
+  // Log de debug (apenas em desenvolvimento)
+  ipcMain.handle('log-debug', async (event, nivel, mensagem, dados = null) => {
+    if (process.env.NODE_ENV === 'development') {
+      const timestamp = new Date().toISOString()
+      console.log(`[${timestamp}] [${nivel.toUpperCase()}] ${mensagem}`, dados || '')
+    }
+    return { success: true }
   })
 }
